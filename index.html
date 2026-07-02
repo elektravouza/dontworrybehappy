@@ -1,4 +1,4 @@
-<div>Teachable Machine Image Model με Μουσική</div>
+<div>Teachable Machine Image Model με Μουσική (Με βάση τη σειρά της κλάσης)</div>
 <button type="button" onclick="init()">Start</button>
 <div id="webcam-container"></div>
 <div id="label-container"></div>
@@ -8,7 +8,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 <script type="text/javascript">
-    // Εδώ βάλαμε το σωστό όνομα του φακέλου σου!
     const URL = "./tm-my-image-model/";
 
     let model, webcam, labelContainer, maxPredictions;
@@ -45,20 +44,25 @@
     async function predict() {
         const prediction = await model.predict(webcam.canvas);
         
-        let isSmiling = false; 
-
+        // Ενημέρωση των labels στην οθόνη για να βλέπεις τα ποσοστά
         for (let i = 0; i < maxPredictions; i++) {
             const classPrediction =
                 prediction[i].className + ": " + prediction[i].probability.toFixed(2);
             labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
 
-            // SOS: Θυμήσου να αλλάξεις το "Class 1" με το όνομα της δικής σου κλάσης (π.χ. "Gelo")
-            if (prediction[i].className === "Class 1" && prediction[i].probability > 0.85) {
-                isSmiling = true;
+        let playMusicNow = false;
+
+        // Σιγουρευόμαστε ότι το μοντέλο έχει τουλάχιστον 2 κλάσεις
+        if (prediction.length > 1) {
+            // Έλεγχος της 2ης κλάσης (index 1). Αν η πιθανότητά της είναι πάνω από 85% (0.85)
+            if (prediction[1].probability > 0.85) {
+                playMusicNow = true;
             }
         }
 
-        if (isSmiling) {
+        // Διαχείριση της μουσικής
+        if (playMusicNow) {
             if (audioPlayer.paused) {
                 audioPlayer.play().catch(e => console.log("Audio play blocked:", e));
             }
