@@ -1,34 +1,92 @@
-body{
+const URL = "./my_model/";
 
-font-family:Arial;
-text-align:center;
-background:#fff8dc;
+let model, webcam, ctx;
 
+// Your one song
+const song = new Audio("music/happy.mp3");
+
+let isPlaying = false;
+
+async function init() {
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
+
+    model = await tmPose.load(modelURL, metadataURL);
+
+    const size = 350;
+    const flip = true;
+
+    webcam = new tmPose.Webcam(size, size, flip);
+
+    await webcam.setup();
+    await webcam.play();
+
+    window.requestAnimationFrame(loop);
+
+    const canvas = document.getElementById("canvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx = canvas.getContext("2d");
 }
 
-canvas{
-
-border-radius:20px;
-border:5px solid orange;
-
+async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
 }
 
-button{
+async function predict() {
 
-font-size:20px;
-padding:15px 30px;
-cursor:pointer;
+    const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
 
-}
+    const prediction = await model.predict(posenetOutput);
 
-h1{
+    ctx.drawImage(webcam.canvas, 0, 0);
 
-font-size:55px;
+    if (pose) {
+        tmPose.drawSkeleton(pose.keypoints, 0.5, ctx);
+        tmPose.drawKeypoints(pose.keypoints, 0.5, ctx);
+    }
 
-}
+    let smileProbability = 0;
 
-#status{
+    prediction.forEach(p => {
+        if (p.className === "Smile") {
+            smileProbability = p.probability;
+        }
+    });
 
-color:#ff6600;
+    // Smile detected
+    if (smileProbability > 0.95) {
+
+        if (!isPlaying) {
+
+            song.currentTime = 0;
+            song.play();
+
+            isPlaying = true;
+
+            document.getElementById("status").innerHTML = "😊 Keep smiling!";
+
+        }
+
+    }
+
+    // Not smiling
+    else {
+
+        if (isPlaying) {
+
+            song.pause();
+            song.currentTime = 0;
+
+            isPlaying = false;
+
+            document.getElementById("status").innerHTML = "😐 Smile to play music!";
+
+        }
+
+    }
 
 }
