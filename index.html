@@ -1,0 +1,71 @@
+<div>Teachable Machine Image Model με Μουσική</div>
+<button type="button" onclick="init()">Start</button>
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+
+<audio id="music" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script type="text/javascript">
+    // Εδώ βάλαμε το σωστό όνομα του φακέλου σου!
+    const URL = "./tm-my-image-model/";
+
+    let model, webcam, labelContainer, maxPredictions;
+    let audioPlayer; 
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        audioPlayer = document.getElementById("music");
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true; 
+        webcam = new tmImage.Webcam(200, 200, flip); 
+        await webcam.setup(); 
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { 
+            labelContainer.appendChild(document.createElement("div"));
+        }
+    }
+
+    async function loop() {
+        webcam.update(); 
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        const prediction = await model.predict(webcam.canvas);
+        
+        let isSmiling = false; 
+
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
+
+            // SOS: Θυμήσου να αλλάξεις το "Class 1" με το όνομα της δικής σου κλάσης (π.χ. "Gelo")
+            if (prediction[i].className === "Class 1" && prediction[i].probability > 0.85) {
+                isSmiling = true;
+            }
+        }
+
+        if (isSmiling) {
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch(e => console.log("Audio play blocked:", e));
+            }
+        } else {
+            if (!audioPlayer.paused) {
+                audioPlayer.pause();
+            }
+        }
+    }
+</script>
