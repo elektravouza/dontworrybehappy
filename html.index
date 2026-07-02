@@ -8,66 +8,56 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 <script type="text/javascript">
-    // More API functions here:
-    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
-
-    // the link to your model provided by Teachable Machine export panel
-    const URL = "./my_model/";
+    // Εδώ βάλαμε το σωστό όνομα του φακέλου σου!
+    const URL = "./tm-my-image-model/";
 
     let model, webcam, labelContainer, maxPredictions;
-    let audioPlayer; // Μεταβλητή για τον έλεγχο του ήχου
+    let audioPlayer; 
 
-    // Load the image model and setup the webcam
     async function init() {
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
-        // Σύνδεση με το audio στοιχείο της σελίδας
         audioPlayer = document.getElementById("music");
 
-        // load the model and metadata
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        // Convenience function to setup a webcam
-        const flip = true; // whether to flip the webcam
-        webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-        await webcam.setup(); // request access to the webcam
+        const flip = true; 
+        webcam = new tmImage.Webcam(200, 200, flip); 
+        await webcam.setup(); 
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // append elements to the DOM
         document.getElementById("webcam-container").appendChild(webcam.canvas);
         labelContainer = document.getElementById("label-container");
-        for (let i = 0; i < maxPredictions; i++) { // and class labels
+        for (let i = 0; i < maxPredictions; i++) { 
             labelContainer.appendChild(document.createElement("div"));
         }
     }
 
     async function loop() {
-        webcam.update(); // update the webcam frame
+        webcam.update(); 
         await predict();
         window.requestAnimationFrame(loop);
     }
 
-    // run the webcam image through the image model
     async function predict() {
         const prediction = await model.predict(webcam.canvas);
         
-        let isSmiling = false; // Flag για να δούμε αν βρέθηκε γέλιο σε αυτό το frame
+        let isSmiling = false; 
 
         for (let i = 0; i < maxPredictions; i++) {
             const classPrediction =
                 prediction[i].className + ": " + prediction[i].probability.toFixed(2);
             labelContainer.childNodes[i].innerHTML = classPrediction;
 
-            // SOS: Άλλαξε το "Class 1" με το όνομα της δικής σου κλάσης για το γέλιο
+            // SOS: Θυμήσου να αλλάξεις το "Class 1" με το όνομα της δικής σου κλάσης (π.χ. "Gelo")
             if (prediction[i].className === "Class 1" && prediction[i].probability > 0.85) {
                 isSmiling = true;
             }
         }
 
-        // Διαχείριση της μουσικής ανάλογα με την πρόβλεψη
         if (isSmiling) {
             if (audioPlayer.paused) {
                 audioPlayer.play().catch(e => console.log("Audio play blocked:", e));
